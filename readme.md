@@ -1,4 +1,4 @@
-# Sentry SDK for ColdFusion
+# Sentry Client for ColdFusion
 
 sentry-cfml2 is based on the fork sentry-cfml client developed 
 by GiancarloGomez (https://github.com/GiancarloGomez/sentry-cfml)
