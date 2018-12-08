@@ -13,6 +13,7 @@ https://github.com/bennadel/JsonSerializer.cfc
 I also made some performance improvements, removed some unecessary code and a new level property 
 with a default so we don't need to throw a hard error. 
 Also removed the cgiVars as an option to pass in something else. The script has a reliance on the CGI vars being passed in and deviating from that would break the script. 
+I have also implemented some basic error logging and added the 429 Too Many Requests check.
 
 sentry-cfml2 is a CFML client for [Sentry](<https://sentry.io/welcome/>) 
 and it has been updated to work with Sentry's Protocol @ version 7.
