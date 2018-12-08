@@ -24,7 +24,7 @@ https://docs.sentry.io/clientdev/
 
 ## Installation
 To install simply clone or download the sentry.cfc and customJsonSerializer.cfc file and place it anywhere in your
-project. By default both files should remain the same directory.
+project. By default both files should be placed in the same directory.
 
 ## Instantiating as a Singleton
 sentry-cfml2 can be instantiated each time you call it or it can
