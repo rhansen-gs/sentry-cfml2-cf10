@@ -7,7 +7,7 @@ developed by jmacul2 (https://github.com/jmacul2/raven-cfml)
 
 The script from which this was forked would not work for me as there seemed 
 to be some major changes to Sentry's SDK.
-I have updated to relfect these changes and also added Ben Nadel's JSON Serializer 
+I have updated to reflect these changes and also added Ben Nadel's JSON Serializer 
 as the original one included was not robust enough.
 https://github.com/bennadel/JsonSerializer.cfc
 I also made some performance improvements, removed some unecessary code and a new level property 
