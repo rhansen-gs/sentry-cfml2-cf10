@@ -1,24 +1,23 @@
 # Sentry SDK for ColdFusion
 
-sentry-cfml is based on the original raven-cfml client developed
-by jmacul2 (https://github.com/jmacul2/raven-cfml)
+This CFC is based on the fork sentry-cfml client developed by GiancarloGomez (https://github.com/GiancarloGomez/sentry-cfml)
+Which it was based off of the original raven-cfml client developed by jmacul2 (https://github.com/jmacul2/raven-cfml)
 
-sentry-cfml is a CFML client for [Sentry](<https://sentry.io/welcome/>) and it has
-been updated to work with Sentry's Protocol @ version 7.
+The script from which this was forked would not work for me as there seemed to be some major changes to Sentry's SDK.
+I have updated to relfect these changes and also added Ben Nadel's JSON Serializer as the original one included was not robust enough.
+https://github.com/bennadel/JsonSerializer.cfc
+I also made some performance improvements, removed some unecessary code and a new level property with a default so we don't need to throw a hard error. Also removed the cgiVars as an option to pass in something else. The script has a reliance on the CGI vars being passed in and deviating from that would break the script. 
 
-sentry-cfml been updated to full script with support to instantiate
-and use as a singleton. Also some functions have been rewritten to use either
-new ColdFusion language enhancements or existing functions.
+sentry-cfml is a CFML client for [Sentry](<https://sentry.io/welcome/>) and it has been updated to work with Sentry's Protocol @ version 7.
 
-sentry-cfml is for use with ColdFusion 2016 testing on earlier
-versions of ColdFusion has not been done.
+sentry-cfml is for use with ColdFusion 2016, 2018. Testing on earlier versions of ColdFusion and Lucee has not been done.
 
 Sentry SDK Documentation
 https://docs.sentry.io/clientdev/
 
 ## Installation
-To install simply clone or download the sentry.cfc file and place it anywhere in your
-project.
+To install simply clone or download the sentry.cfc and customJsonSerializer.cfc file and place it anywhere in your
+project. By default both files should remain the same directory.
 
 ## Instantiating as a Singleton
 sentry-cfml can be instantiated each time you call it or it can
@@ -118,8 +117,6 @@ for more options than just posting a message. Review the argument hints on the C
         additionalData              : {
             session : session
         },
-        useSignature                : false,
-        cgiVars                     : cgi,
         useThread                   : true,
         userInfo                    : {}
     );
