@@ -17,7 +17,7 @@ Also removed the cgiVars as an option to pass in something else. The script has 
 sentry-cfml2 is a CFML client for [Sentry](<https://sentry.io/welcome/>) 
 and it has been updated to work with Sentry's Protocol @ version 7.
 
-sentry-cfml is for use with ColdFusion 2016, 2018. Testing on earlier versions of ColdFusion and Lucee has not been done.
+sentry-cfml2 is for use with ColdFusion 2016, 2018. Testing on earlier versions of ColdFusion and Lucee has not been done.
 
 Sentry SDK Documentation
 https://docs.sentry.io/clientdev/
@@ -27,7 +27,7 @@ To install simply clone or download the sentry.cfc and customJsonSerializer.cfc 
 project. By default both files should remain the same directory.
 
 ## Instantiating as a Singleton
-sentry-cfml can be instantiated each time you call it or it can
+sentry-cfml2 can be instantiated each time you call it or it can
 also live as a Singleton in your Application scope.
 
 ```javascript
