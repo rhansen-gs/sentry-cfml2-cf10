@@ -1,24 +1,13 @@
 # Sentry Client for ColdFusion
 
+This CFC is a slight modification of the sentry-cfml2 client by KrunchMuffin (https://github.com/KrunchMuffin/sentry-cfml2)
 sentry-cfml2 is based on the fork sentry-cfml client developed 
 by GiancarloGomez (https://github.com/GiancarloGomez/sentry-cfml)
 which it was based off of the original raven-cfml client 
 developed by jmacul2 (https://github.com/jmacul2/raven-cfml)
 
-The script from which this was forked would not work for me as there seemed 
-to be some major changes to Sentry's SDK.
-I have updated to reflect these changes and also added Ben Nadel's JSON Serializer 
-as the original one included was not robust enough.
-https://github.com/bennadel/JsonSerializer.cfc
-I also made some performance improvements, removed some unecessary code and a new level property 
-with a default so we don't need to throw a hard error. 
-Also removed the cgiVars as an option to pass in something else. The script has a reliance on the CGI vars being passed in and deviating from that would break the script. 
-I have also implemented some basic error logging and added the 429 Too Many Requests check.
-
-sentry-cfml2 is a CFML client for [Sentry](<https://sentry.io/welcome/>) 
-and it has been updated to work with Sentry's Protocol @ version 7.
-
-sentry-cfml2 is for use with ColdFusion 2016, 2018. Testing on earlier versions of ColdFusion and Lucee has not been done.
+This code has been modified to run under ColdFusion 10.
+Testing on later versions of ColdFusion and Lucee has not been done.
 
 Sentry SDK Documentation
 https://docs.sentry.io/clientdev/

@@ -1,34 +1,25 @@
 /**
-* Sentry SDK for ColdFusion
+* Sentry SDK for ColdFusion 10
 *
-* This CFC is based on the fork sentry-cfml client developed
+* This CFC is a slight modification of the sentry-cfml2 client by KrunchMuffin (https://github.com/KrunchMuffin/sentry-cfml2)
+*
+* Which is based on the fork sentry-cfml client developed
 * by GiancarloGomez (https://github.com/GiancarloGomez/sentry-cfml)
 *
 * Which it was based off of the original raven-cfml client developed
 * by jmacul2 (https://github.com/jmacul2/raven-cfml)
 *
-* The script from which this was forked would not work for me
-* as there seemed to be some major changes to Sentry's SDK.
-* I have updated to relfect these changes and also added
-* Ben Nadel's JSON Serializer as the original one included was not robust enough
-* https://github.com/bennadel/JsonSerializer.cfc
-* I also made some performance improvements, removed some unecessary code
-* and a new level property with a default so we don't need to throw a hard error.
-* Also removed the cgiVars as an option to pass in something else. The script
-* has a reliance on the CGI vars being passed in and deviating from that would break the script.
-*
-* This CFC is for use with ColdFusion 2016 and 2018 testing on earlier
-* versions of ColdFusion and Lucee has not been done.
+* This code has been modified to run under ColdFusion 10.
+* Testing on later versions of ColdFusion and Lucee has not been done.
 *
 * Sentry SDK Documentation
 * https://docs.sentry.io/clientdev/
-*
 */
 component displayname="sentry" output="false" accessors="true"{
 
 	property name="environment" type="string";
 	property name="levels" type="array";
-	property name="logger" type="string" default="sentry-cfml2";
+	property name="logger" type="string" default="sentry-cfml2-cf10";
 	property name="platform" type="string" default="cfml";
 	property name="release" type="string";
 	property name="privateKey";
@@ -85,6 +76,8 @@ component displayname="sentry" output="false" accessors="true"{
 		// overwrite defaults
 		if ( structKeyExists(arguments,"sentryUrl") && len(trim(arguments.sentryUrl)) )
 			setSentryUrl(arguments.sentryUrl);
+
+		return this;
 	}
 
 	/**
@@ -94,9 +87,14 @@ component displayname="sentry" output="false" accessors="true"{
 	*/
 	private void function parseDSN(required string DSN) {
 		var pattern = "^(?:(\w+):)?\/\/(\w+):(\w+)?@([\w\.-]+)\/(.*)";
-		var segments 	= reFind(pattern, arguments.DSN, 1, true, 'all')[1].match;
+		var result 	= reFind(pattern,arguments.DSN,1,true);
+		var segments = [];
 
-		if (segments.len() neq 6) {
+		for(var i=1; i LTE ArrayLen(result.pos); i++){
+			arrayAppend(segments, mid(arguments.DSN, result.pos[i], result.len[i]));
+		}
+
+		if (arrayLen(segments) neq 6) {
 			// should be 5 parts to the DSN, (we ask for 6 because refind will return the whole capture group as #1) otherwise, it's likely the new DSN or just a bad value.
 			throw(message="Error parsing DSN. Make sure you are using the Legacy DSN if you intend to use the DSN option.");
 		}
@@ -115,7 +113,7 @@ component displayname="sentry" output="false" accessors="true"{
 	* 	"fatal","error","warning","info","debug"
 	*/
 	private void function validateLevel(required string level) {
-		if(!getLevels().find(arguments.level)) {
+		if(!arrayFind(getLevels(), arguments.level)) {
 			// if it's not one of the above, just set error as default. no need to throw hard error.
 			setLevel("error");
 		} else {
@@ -362,13 +360,13 @@ component displayname="sentry" output="false" accessors="true"{
 		header = "Sentry sentry_version=#getSentryVersion()#, sentry_timestamp=#timeVars.time#, sentry_key=#getPublicKey()#, sentry_secret=#getPrivateKey()#, sentry_client=#getLogger()#/#getVersion()#";
 		// post message
 		if (arguments.useThread){
-			cfthread(
-				action = "run",
-				name = "sentry-thread-" & createUUID(),
-				header = header,
+			thread
+				action = "run"
+				name = "sentry-thread-" & createUUID()
+				header = header
 				jsonCapture = jsonCapture,
 				application = application
-			){
+			{
 				post(header,jsonCapture);
 			}
 		} else {
@@ -387,15 +385,15 @@ component displayname="sentry" output="false" accessors="true"{
 				(structKeyExists(application, "sentryRetryAfter") && isDate(application.sentryRetryAfter) && Now() gte application.sentryRetryAfter)) {
 			var res = {};
 			// send to sentry via REST API Call
-			cfhttp(
-				url 	: getSentryUrl() & "/api/store/",
-				method 	: "post",
+			local.httpService = new http(
+				url = getSentryUrl() & "/api/store/",
+				method = "post",
 				timeout : "15",
-				result 	: "res"
-			){
-				cfhttpparam(type="header",name="X-Sentry-Auth",value=arguments.header);
-				cfhttpparam(type="body",value=arguments.json);
-			}
+				charset = "utf-8"
+			);
+			local.httpService.addParam(type="header",name="X-Sentry-Auth",value=arguments.header);
+			local.httpService.addParam(type="body",value=arguments.json);
+			res = httpService.send().getPrefix();
 		} else {
 				cflog(application=true, file="Sentry-cfml-warning", text="Dropped error payload due to 429 Too Many Requests in effect.", type="warning");
 		}
