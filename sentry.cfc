@@ -30,6 +30,7 @@ component displayname="sentry" output="false" accessors="true"{
 	property name="sentryVersion" type="string" default="7";
 	property name="serverName" type="string";
 	property name="level" Type="string" default="error";
+	property name="nonAppPathPatterns" Type="array";
 
 	/**
 	* @release The release version of the application.
@@ -40,6 +41,7 @@ component displayname="sentry" output="false" accessors="true"{
 	* @projectID The ID Sentry Project
 	* @sentryUrl The Sentry API url which defaults to https://sentry.io
 	* @serverName The name of the server, defaults to cgi.server_name
+	* @nonAppPathPatterns A list of regex patterns (as strings) that when matched to a stacktrace filepath, that frame will be marked as in_app=false.
 	*/
 	function init(
 		string release,
@@ -49,7 +51,8 @@ component displayname="sentry" output="false" accessors="true"{
 		string privateKey,
 		numeric projectID,
 		string sentryUrl,
-		string serverName = cgi.server_name
+		string serverName = cgi.server_name,
+		array nonAppPathPatterns = []
 	) {
 		// set keys via DSN (Legacy) or keys and id
 		if (structKeyExists(arguments,"DSN") && len(trim(arguments.DSN))){
@@ -76,6 +79,8 @@ component displayname="sentry" output="false" accessors="true"{
 		// overwrite defaults
 		if ( structKeyExists(arguments,"sentryUrl") && len(trim(arguments.sentryUrl)) )
 			setSentryUrl(arguments.sentryUrl);
+
+		setNonAppPathPatterns(arguments.nonAppPathPatterns);
 
 		return this;
 	}
@@ -196,8 +201,26 @@ component displayname="sentry" output="false" accessors="true"{
 		* CORE AND OPTIONAL ATTRIBUTES
 		* https://docs.sentry.io/clientdev/attributes/
 		*/
+		local.message = arguments.exception.message;
+		if (isdefined("arguments.exception.diagnostics") AND arguments.exception.diagnostics NEQ "") {
+
+			// Append diagnostics if available.  This will show sql error messages.
+			if (arguments.exception.diagnostics.startsWith(local.message)) {
+				local.message = arguments.exception.diagnostics;
+			} else {
+				local.message &= " " & arguments.exception.diagnostics;
+			}
+
+			// Diagnostics ends with a "the error occurred on" message which is not needed
+			// for sentry as we have a stacktrace.
+			local.foundBrIndex = findNoCase("<br>The error occurred on line", local.message);
+			if (local.foundBrIndex GT len(arguments.exception.message)) {
+				local.message = left(local.message, local.foundBrIndex - 1);
+			}
+		}
+
 		sentryException = {
-			"message" 	: arguments.exception.message & " " & arguments.exception.detail,
+			"message" 	: local.message,
 			"culprit" 	: arguments.exception.message
 		};
 
@@ -212,7 +235,7 @@ component displayname="sentry" output="false" accessors="true"{
 		if (!isNull(arguments.additionalData))
     	for (currentKey in additionalData) {
 				sentryExceptionExtra[currentKey] = additionalData[currentKey];
-      };
+		};
 
 		if (structCount(sentryExceptionExtra))
 			sentryException["extra"] = sentryExceptionExtra;
@@ -222,7 +245,7 @@ component displayname="sentry" output="false" accessors="true"{
 		* https://docs.sentry.io/clientdev/interfaces/exception/
 		*/
 		sentryException["exception"] = {"values":[{
-			"value" : arguments.exception.message & " " & arguments.exception.detail,
+			"value" : local.message,
 			"type" 	: arguments.exception.type & " Error"
 			}]
 		};
@@ -238,7 +261,7 @@ component displayname="sentry" output="false" accessors="true"{
 			"frames" : []
 		};
 
-		for (i=1; i <= arrayLen(tagContext); i++) {
+		for (i=arrayLen(tagContext); i >= 1; i--) {
 			if (compareNoCase(tagContext[i]["TEMPLATE"],currentTemplate)) {
 				fileArray = [];
 				if (fileExists(tagContext[i]["TEMPLATE"])) {
@@ -250,34 +273,41 @@ component displayname="sentry" output="false" accessors="true"{
 				currentTemplate = tagContext[i]["TEMPLATE"];
 			}
 
-			sentryException["stacktrace"]["frames"][i] = {
+			local.frame = {
 				"abs_path" 	= tagContext[i]["TEMPLATE"],
-				"filename" 	= tagContext[i]["TEMPLATE"],
-				"lineno" 	= tagContext[i]["LINE"]
+				"filename" 	= getRelativePath(tagContext[i]["TEMPLATE"]),
+				"lineno" 	= tagContext[i]["LINE"],
+				"colno"		= tagContext[i]["COLUMN"],
+				"function"	= tagContext[i]["ID"],
+				"in_app"	= true,
+				"module"	= "sentry.interfaces.Stacktrace"
 			};
-
-			// The name of the function being called
-			if (i == 1)
-				sentryException["stacktrace"]["frames"][i]["function"] = "column #tagContext[i]["COLUMN"]#";
-			else
-				sentryException["stacktrace"]["frames"][i]["function"] = tagContext[i]["ID"];
+			arrayAppend(sentryException["stacktrace"]["frames"], local.frame);
 
 			// for source code rendering
-			sentryException["stacktrace"]["frames"][i]["pre_context"] = [];
+			local.frame["pre_context"] = [];
 			if (tagContext[i]["LINE"]-3 >= 1)
-				sentryException["stacktrace"]["frames"][i]["pre_context"][1] = fileArray[tagContext[i]["LINE"]-3];
+				local.frame["pre_context"][1] = fileArray[tagContext[i]["LINE"]-3];
 			if (tagContext[i]["LINE"]-2 >= 1)
-				sentryException["stacktrace"]["frames"][i]["pre_context"][1] = fileArray[tagContext[i]["LINE"]-2];
+				local.frame["pre_context"][2] = fileArray[tagContext[i]["LINE"]-2];
 			if (tagContext[i]["LINE"]-1 >= 1)
-				sentryException["stacktrace"]["frames"][i]["pre_context"][2] = fileArray[tagContext[i]["LINE"]-1];
-			if (arrayLen(fileArray))
-				sentryException["stacktrace"]["frames"][i]["context_line"] = fileArray[tagContext[i]["LINE"]];
+				local.frame["pre_context"][3] = fileArray[tagContext[i]["LINE"]-1];
 
-			sentryException["stacktrace"]["frames"][i]["post_context"] = [];
+			if (arrayLen(fileArray))
+				local.frame["context_line"] = fileArray[tagContext[i]["LINE"]];
+
+			local.frame["post_context"] = [];
 			if (arrayLen(fileArray) >= tagContext[i]["LINE"]+1)
-				sentryException["stacktrace"]["frames"][i]["post_context"][1] = fileArray[tagContext[i]["LINE"]+1];
+				local.frame["post_context"][1] = fileArray[tagContext[i]["LINE"]+1];
 			if (arrayLen(fileArray) >= tagContext[i]["LINE"]+2)
-				sentryException["stacktrace"]["frames"][i]["post_context"][2] = fileArray[tagContext[i]["LINE"]+2];
+				local.frame["post_context"][2] = fileArray[tagContext[i]["LINE"]+2];
+
+			for (local.nonAppPattern in nonAppPathPatterns) {
+				if (reFindNoCase(local.nonAppPattern, local.frame.abs_path) > 0) {
+					local.frame["in_app"] = false;
+					break;
+				}
+			}
 		}
 
 		capture(
@@ -286,6 +316,23 @@ component displayname="sentry" output="false" accessors="true"{
 			useThread : arguments.useThread,
 			userInfo : arguments.userInfo
 		);
+	}
+
+	/**
+	* Returns the relative path from the root of the website. Defaults to filePath if
+	* no relative path exists.
+	*/
+	private String function getRelativePath(String filePath) {
+		try {
+			local.pathsClass = createObject("java", "java.nio.file.Paths");
+			local.root = local.pathsClass.get(expandPath("\"), []);
+			local.target = local.pathsClass.get(arguments.filePath, []);
+
+			return local.root.relativize(local.target).toString();
+		} catch (any ex) {
+			// if target is not a subpath of root, fallback to absolute path.
+			return filePath;
+		}
 	}
 
 	/**
@@ -411,10 +458,13 @@ component displayname="sentry" output="false" accessors="true"{
 	private string function jsonEncode(
 		required any data
 	) {
+		local.serializer = new customJsonSerializer();
 
-		var jsondata = new customJsonSerializer().serialize(arguments.data);
+		local.serializer.asInteger("lineno");
+		local.serializer.asInteger("colno");
+		local.serializer.asBoolean("in_app");
 
-		return jsondata;
+		return local.serializer.serialize(arguments.data);
 	}
 
 	/**
