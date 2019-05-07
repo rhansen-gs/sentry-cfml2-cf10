@@ -279,8 +279,7 @@ component displayname="sentry" output="false" accessors="true"{
 				"lineno" 	= tagContext[i]["LINE"],
 				"colno"		= tagContext[i]["COLUMN"],
 				"function"	= tagContext[i]["ID"],
-				"in_app"	= true,
-				"module"	= "sentry.interfaces.Stacktrace"
+				"in_app"	= true
 			};
 			arrayAppend(sentryException["stacktrace"]["frames"], local.frame);
 
