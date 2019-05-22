@@ -244,9 +244,14 @@ component displayname="sentry" output="false" accessors="true"{
 		* EXCEPTION INTERFACE
 		* https://docs.sentry.io/clientdev/interfaces/exception/
 		*/
+		local.type = arguments.exception.type;
+		if (isDefined("arguments.exception.rootcause.type")) {
+			local.type = arguments.exception.rootcause.type;
+		}
+
 		sentryException["exception"] = {"values":[{
 			"value" : local.message,
-			"type" 	: arguments.exception.type & " Error"
+			"type" 	: local.type & " Error"
 			}]
 		};
 

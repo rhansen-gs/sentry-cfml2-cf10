@@ -299,8 +299,12 @@ component
 
 				}
 
-				// Since we don't have a key to go off of, pass-through the most recent hint.
-				serializeInput( value, hint );
+				if (isdefined("value")) {
+					// Since we don't have a key to go off of, pass-through the most recent hint.
+					serializeInput( value, hint );
+				} else {
+					writeOutput("null");
+				}
 
 			}
 
