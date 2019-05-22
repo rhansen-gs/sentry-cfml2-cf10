@@ -174,6 +174,7 @@ component displayname="sentry" output="false" accessors="true"{
 	* @oneLineStackTrace Set to true to render only 1 tag context. This is not the Java Stack Trace this is simply for the code output in Sentry
 	* @removeTabsOnJavaStackTrace Removes the tab on the child lines in the Stack Trace
 	* @additionalData Additional metadata to store with the event - passed into the extra attribute
+	* @tags Optional Additional tags to send to Sentry
 	*/
 	public any function captureException(
 		required any exception,
@@ -184,7 +185,8 @@ component displayname="sentry" output="false" accessors="true"{
 		boolean removeTabsOnJavaStackTrace = false,
 		any additionalData,
 		boolean useThread = false,
-		struct userInfo = {}
+		struct userInfo = {},
+		struct tags = {}
 	) {
 		var sentryException = {};
 		var sentryExceptionExtra = {};
@@ -318,7 +320,8 @@ component displayname="sentry" output="false" accessors="true"{
 			captureStruct : sentryException,
 			path : arguments.path,
 			useThread : arguments.useThread,
-			userInfo : arguments.userInfo
+			userInfo : arguments.userInfo,
+			tags : arguments.tags
 		);
 	}
 
@@ -346,12 +349,14 @@ component displayname="sentry" output="false" accessors="true"{
 	* @path The path to the script currently executing
 	* @useThread Option to send post to Sentry in its own thread
 	* @userInfo Optional Struct that gets passed to the Sentry User Interface
+	* @tags Optional Additional tags to send to Sentry
 	*/
 	public void function capture(
 		required any captureStruct,
 		string path = "",
 		boolean useThread = false,
-		struct userInfo = {}
+		struct userInfo = {},
+		struct tags = {}
 	) {
 		var jsonCapture = "";
 		var signature = "";
@@ -386,6 +391,9 @@ component displayname="sentry" output="false" accessors="true"{
 		*/
 		if (!structIsEmpty(arguments.userInfo))
 			arguments.captureStruct["user"] = arguments.userInfo;
+
+		if (!structIsEmpty(arguments.tags))
+			arguments.captureStruct["tags"] = arguments.tags;
 
 		// Prepare path for HTTP Interface
 		arguments.path = trim(arguments.path);
