@@ -454,16 +454,16 @@ component displayname="sentry" output="false" accessors="true"{
 			local.httpService.addParam(type="body",value=arguments.json);
 			res = httpService.send().getPrefix();
 		} else {
-				cflog(application=true, file="Sentry-cfml-warning", text="Dropped error payload due to 429 Too Many Requests in effect.", type="warning");
+			writelog(application=true, file="Sentry-cfml-warning", text="Dropped error payload due to 429 Too Many Requests in effect.", type="warning");
 		}
 
 		if (!find("200", res.statuscode)){
 			if(find("429", res.statuscode)){
 				var retry = numberFormat(res.headers["retry-after"],"9"); // comes in as seconds floating point
 				application.sentryRetryAfter = dateAdd("s", retry, Now());
-				cflog(application=true, file="Sentry-cfml-warning", text="429 Too Many Requests #res.filecontent# retrying after #application.sentryRetryAfter#", type="warning");
+				writelog(application=true, file="Sentry-cfml-warning", text="429 Too Many Requests #res.filecontent# retrying after #application.sentryRetryAfter#", type="warning");
 			} else {
-				cflog(application=true, file="Sentry-cfml-Error", text="Sentry failure", type="error");
+				writelog(application=true, file="Sentry-cfml-Error", text="Sentry failure", type="error");
 			}
 		}
 	}

@@ -1,5 +1,7 @@
 # Sentry Client for ColdFusion
 
+source: https://github.com/rhansen-gs/sentry-cfml2-cf10
+
 This CFC is a slight modification of the sentry-cfml2 client by KrunchMuffin (https://github.com/KrunchMuffin/sentry-cfml2)
 sentry-cfml2 is based on the fork sentry-cfml client developed 
 by GiancarloGomez (https://github.com/GiancarloGomez/sentry-cfml)
